@@ -1,0 +1,28 @@
+{
+    "name": "cli-folder-organiser",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "tsc",
+        "start": "npm run build && node ./dist/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Joshibbotson/cli-folder-organiser.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Joshibbotson/cli-folder-organiser/issues"
+    },
+    "homepage": "https://github.com/Joshibbotson/cli-folder-organiser#readme",
+    "dependencies": {
+        "inquirer": "^8.2.6",
+        "ts-node": "^10.9.2"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.5"
+    }
+}

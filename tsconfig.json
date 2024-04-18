@@ -1,0 +1,17 @@
+{
+    "ts-node": {
+        "esm": true
+    },
+    "compilerOptions": {
+        "skipLibCheck": false,
+        "rootDir": "src",
+        "outDir": "dist",
+        "target": "es2020",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "module": "commonjs",
+        "forceConsistentCasingInFileNames": false
+    },
+    "include": ["src/**/*"],
+    "exclude": ["__tests__"]
+}
