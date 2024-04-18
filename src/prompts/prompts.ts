@@ -1,4 +1,4 @@
-import { promptBuilder } from "../promptBuilder";
+import { promptBuilder } from "../utils/promptBuilder";
 import { server, serverIsRunning } from "../server";
 
 export function initialQuestions() {

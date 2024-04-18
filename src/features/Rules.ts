@@ -1,8 +1,9 @@
 import fs from "fs";
-import { printRuleFile } from "./printRules";
-import { printToConsole } from "./print";
+import { printToConsole } from "../utils/print";
 import { pressEnterToContinue } from "../menus/pressEnterMenu.menu";
 import { openMainMenu } from "../menus/mainMenu.menu";
+import { ICreateRule } from "../menus/newRuleMenu.menu";
+import { RULES } from "../CONSTANTS";
 
 class Rules {
     private readonly printer;
@@ -19,7 +20,7 @@ class Rules {
     private checkIfRuleFileExists() {
         if (!fs.existsSync("./config-files/rules.json")) {
             const data = {
-                info: "No rules available, please add new rules",
+                info: RULES.noRules,
             };
             const stringifiedData = JSON.stringify(data, null, 2);
             fs.writeFileSync("./config-files/rules.json", stringifiedData);
@@ -34,7 +35,7 @@ class Rules {
                 return rules;
             }
             return {
-                info: "No rules available, please add new rules",
+                info: RULES.noRules,
             };
         } catch (err) {
             console.error("Failed to read file with an error of: ", err);
@@ -43,7 +44,7 @@ class Rules {
 
     public async resetRuleFile() {
         fs.writeFileSync("./config-files/rules.json", "");
-        await printRuleFile();
+        await this.printRuleFile();
         await this.pressEnterToContinue();
         await this.openMainMenu();
     }
@@ -54,20 +55,26 @@ class Rules {
         await this.openMainMenu();
     }
 
-    public addRule(rule: string) {
+    public addRule(ruleSpecification: ICreateRule) {
         let data = this.readRuleFile();
-        if (data !== undefined) {
+        if (data !== undefined && !data.info) {
             data.push({
-                rule: rule,
+                rule: ruleSpecification.ruleName,
+                directoPath: ruleSpecification.directoryPath,
+                includedFileExtension: ruleSpecification.fileExtensions,
+                active: ruleSpecification.isActive,
                 creationDate: new Date().toISOString(),
-                active: true,
             });
-        } else if (data === undefined) {
-            data = {
-                rule: rule,
-                creationDate: new Date().toISOString(),
-                active: true,
-            };
+        } else if (data === undefined || Object.keys(data).length > 0) {
+            data = [
+                {
+                    rule: ruleSpecification.ruleName,
+                    directoPath: ruleSpecification.directoryPath,
+                    includedFileExtension: ruleSpecification.fileExtensions,
+                    active: ruleSpecification.isActive,
+                    creationDate: new Date().toISOString(),
+                },
+            ];
         }
         const stringifiedData = JSON.stringify(data, null, 2);
         fs.writeFileSync("./config-files/rules.json", stringifiedData);

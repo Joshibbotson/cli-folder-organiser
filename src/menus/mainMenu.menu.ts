@@ -1,8 +1,7 @@
 import { initialQuestions } from "../prompts/prompts";
 import { closeServer, server, startServer } from "../server";
+import { rules } from "../features/Rules";
 import { endProgram } from "../utils/endProgram";
-import { printRuleFile } from "../utils/printRules";
-import { resetRuleFile } from "../utils/resetRuleFile";
 import { openNewRuleList } from "./newRuleMenu.menu";
 import inquirer from "inquirer";
 
@@ -31,13 +30,13 @@ export async function openMainMenu() {
 export async function handleMainMenuSelection(answer: string) {
     switch (answer) {
         case "See existing rules":
-            await printRuleFile();
+            await rules.printRuleFile();
             break;
         case "Add new rule":
             await openNewRuleList();
             break;
         case "Reset all rules":
-            await resetRuleFile();
+            await rules.resetRuleFile();
             break;
         case "Start Folder Organiser":
             await startServer();

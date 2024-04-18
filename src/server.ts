@@ -7,7 +7,7 @@ export const server = http.createServer();
 export async function startServer() {
     server.listen(3000, async () => {
         console.log(
-            "\n folder organiser server is listening on http://localhost:3000"
+            "\n Folder Organiser server is listening on http://localhost:3000"
         );
     });
     await pressEnterToContinue();
@@ -28,7 +28,9 @@ export async function closeServer() {
             console.error("\nError shutting down the server:", err);
             return;
         }
-        console.log("\nServer has been stopped.");
+        console.log(
+            "\n Folder Organiser server is no longer listening for changes."
+        );
     });
     await pressEnterToContinue();
     await openMainMenu();
