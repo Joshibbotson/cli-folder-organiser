@@ -19,6 +19,7 @@
     },
     "homepage": "https://github.com/Joshibbotson/cli-folder-organiser#readme",
     "dependencies": {
+        "chokidar": "^3.6.0",
         "inquirer": "^8.2.6",
         "ts-node": "^10.9.2"
     },

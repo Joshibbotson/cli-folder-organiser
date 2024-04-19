@@ -1,9 +1,9 @@
 import { initialQuestions } from "../prompts/prompts";
-import { closeServer, server, startServer } from "../server";
 import { rules } from "../features/Rules";
 import { endProgram } from "../utils/endProgram";
 import { openNewRuleList } from "./newRuleMenu.menu";
 import inquirer from "inquirer";
+import { fileManagement } from "../features/FileManagement";
 
 export async function openMainMenu() {
     try {
@@ -39,10 +39,10 @@ export async function handleMainMenuSelection(answer: string) {
             await rules.resetRuleFile();
             break;
         case "Start Folder Organiser":
-            await startServer();
+            await fileManagement.startDirectoryWatchers();
             break;
         case "Stop Folder Organiser":
-            await closeServer();
+            await fileManagement.startDirectoryWatchers();
         case "Exit":
             endProgram();
     }

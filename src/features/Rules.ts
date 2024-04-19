@@ -2,10 +2,10 @@ import fs from "fs";
 import { printToConsole } from "../utils/print";
 import { pressEnterToContinue } from "../menus/pressEnterMenu.menu";
 import { openMainMenu } from "../menus/mainMenu.menu";
-import { ICreateRule } from "../menus/newRuleMenu.menu";
 import { RULES } from "../CONSTANTS";
+import { ICreateRule } from "../menus/types";
 
-class Rules {
+export class Rules {
     private readonly printer;
     private readonly pressEnterToContinue: () => void;
     public readonly openMainMenu: () => void;
@@ -60,8 +60,11 @@ class Rules {
         if (data !== undefined && !data.info) {
             data.push({
                 rule: ruleSpecification.ruleName,
-                directoPath: ruleSpecification.directoryPath,
+                directoryIn: ruleSpecification.dirIn,
                 includedFileExtension: ruleSpecification.fileExtensions,
+                includedFileNames: ruleSpecification.fileName,
+                recursive: ruleSpecification.recursive,
+                directoryOut: ruleSpecification.dirOut,
                 active: ruleSpecification.isActive,
                 creationDate: new Date().toISOString(),
             });
@@ -69,8 +72,11 @@ class Rules {
             data = [
                 {
                     rule: ruleSpecification.ruleName,
-                    directoPath: ruleSpecification.directoryPath,
+                    directoryIn: ruleSpecification.dirIn,
                     includedFileExtension: ruleSpecification.fileExtensions,
+                    includedFileNames: ruleSpecification.fileName,
+                    recursive: ruleSpecification.recursive,
+                    directoryOut: ruleSpecification.dirOut,
                     active: ruleSpecification.isActive,
                     creationDate: new Date().toISOString(),
                 },

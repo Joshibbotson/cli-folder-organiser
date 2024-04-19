@@ -2,13 +2,7 @@ import inquirer from "inquirer";
 import { newRuleQuestions } from "../prompts/prompts";
 import { openMainMenu } from "./mainMenu.menu";
 import { rules } from "../features/Rules";
-
-export interface ICreateRule {
-    ruleName: string;
-    directoryPath: string;
-    fileExtensions: string;
-    isActive: boolean;
-}
+import { ICreateRule } from "./types";
 
 export async function openNewRuleList() {
     try {
