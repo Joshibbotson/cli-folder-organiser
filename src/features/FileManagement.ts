@@ -1,6 +1,8 @@
 import { Rules, rules } from "./Rules";
-import { ICreateRule, IReadRule } from "../menus/types";
+import { IReadRule } from "../menus/types";
 import chokidar from "chokidar";
+import path from "path";
+import fs from "fs";
 
 class FileManagement {
     private readonly rulesReader: Rules;
@@ -43,16 +45,11 @@ class FileManagement {
     }
 
     private watchDirectory(directory: string, rules: IReadRule[]) {
-        console.log(
-            `Starting to watch changes in: ${directory} with these rules: ${rules[0].rule}`
-        );
-
         const watcher = chokidar.watch(directory, {
             ignored: /(^|[\/\\])\../, // ignore dotfiles
             persistent: true,
         });
 
-        // Handling the events with your rules
         watcher
             .on("add", path => this.handleFileEvent("add", path, rules))
             .on("change", path => this.handleFileEvent("change", path, rules))
@@ -60,7 +57,7 @@ class FileManagement {
             .on("error", error => console.error(`Watcher error: ${error}`))
             .on("ready", () =>
                 console.log(
-                    `Initial scan complete. Watching for changes in ${directory}`
+                    `\n Initial scan complete. Watching for changes in ${directory}`
                 )
             );
 
@@ -71,11 +68,10 @@ class FileManagement {
     }
 
     private handleFileEvent(
-        eventType: string,
+        eventType: EventType,
         path: string,
         rules: IReadRule[]
     ) {
-        console.log(`Event: ${eventType} in file: ${path}`);
         if (rules.length === 1) {
             this.processRule(eventType, path, rules[0]);
         } else {
@@ -83,9 +79,79 @@ class FileManagement {
         }
     }
 
-    processRule(eventType: EventType, filename: string, rule: IReadRule) {
-        // if (eventType === "change") {
-        // }
+    public processRule(
+        eventType: EventType,
+        filename: string,
+        rule: IReadRule
+    ) {
+        if (!rule.active) {
+            return "Rule not active";
+        }
+        if (
+            eventType === "add" &&
+            (this.checkFileExtension(filename, rule.includedFileExtension) ||
+                this.checkFileName(filename, rule.includedFileNames))
+        ) {
+            const oldPath = filename;
+            const newPath = path.join(
+                rule.directoryOut,
+                path.basename(filename)
+            );
+            try {
+                if (!this.checkDirectoryExists(rule.directoryOut)) {
+                    console.log(
+                        `Directory does not exist, creating: ${rule.directoryOut}`
+                    );
+                    this.createDirectory(rule.directoryOut, true);
+                    this.moveFileToAlternativeDir(oldPath, newPath);
+                }
+
+                console.log(`Successfully moved ${oldPath} to ${newPath}`);
+            } catch (error) {
+                console.error(`Error during file processing: ${error}`);
+            }
+        }
+    }
+    private checkFileExtension(
+        filename: string,
+        acceptedFileExts: string
+    ): boolean {
+        const extension = path.extname(filename);
+        return acceptedFileExts.split(" ").includes(extension);
+    }
+
+    /** Consider the following in the future:
+     * - case sensitivity
+     * - regex checks
+     * Currently checks space deliminted strings.
+     */
+    private checkFileName(
+        filename: string,
+        acceptedFileNames: string
+    ): boolean {
+        const basename = path.basename(filename);
+        return acceptedFileNames.split(" ").includes(basename);
+    }
+
+    public checkDirectoryExists(path: string): boolean {
+        return fs.existsSync(path);
+    }
+
+    public createDirectory(path: string, recursive: boolean): void {
+        console.log("createDirectory!");
+        try {
+            fs.mkdirSync(path, { recursive: recursive });
+        } catch (err) {
+            throw `Failed to create directory with an error of: ${err}`;
+        }
+    }
+
+    public moveFileToAlternativeDir(oldPath: string, newPath: string): void {
+        try {
+            fs.renameSync(oldPath, newPath);
+        } catch (err) {
+            throw new Error(`failed to move file with an error of:${err}`);
+        }
     }
 
     // public stopAllDirectoryWatchers() {
@@ -105,4 +171,4 @@ class FileManagement {
 
 export const fileManagement = new FileManagement(rules);
 
-export type EventType = "change" | "close" | "error" | "rename";
+export type EventType = "change" | "add" | "unlink";
