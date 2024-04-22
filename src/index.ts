@@ -1,5 +1,7 @@
-import { fileManagement } from "./features/FileManagement";
-import { rules } from "./features/Rules";
+import { fileManagement } from "./services/FileManagement";
+import { rules } from "./services/Rules";
+import { openMainMenu } from "./menus/main-menu/mainMenu.menu";
 
-rules.openMainMenu();
-fileManagement.startDirectoryWatchers();
+openMainMenu();
+fileManagement;
+rules;

@@ -9,6 +9,7 @@ export interface ICreateRule {
 }
 
 export interface IReadRule {
+    id: number;
     rule: string;
     directoryIn: string;
     includedFileExtension: string;
