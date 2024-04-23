@@ -9,7 +9,8 @@ import { Logger } from "./Logger";
 
 class FileManagement {
     private readonly rulesReader: Rules;
-    private readonly rules: Map<string, IReadRule[]> | null = null;
+    private readonly rules: IReadRule[] | null = null;
+
     private directoryWatcher: Map<any, FSWatcher> = new Map();
     private readonly pressEnterToContinue: () => void;
     private readonly openMainMenu: () => void;
@@ -21,28 +22,23 @@ class FileManagement {
         this.openMainMenu = openMainMenu;
     }
 
-    public getRules(): Map<string, IReadRule[]> | null {
+    /** Reads the rules.json file. If rules.json is empty will return null
+     *
+     * @returns IReadRule[] | null
+     */
+    public getRules(): IReadRule[] | null {
         const rules = this.rulesReader.readRuleFile();
-
         if (rules && rules.info) {
             return null;
         }
-
-        const rulesHash = new Map();
-
-        for (let i = 0; i < rules.length; i++) {
-            if (rulesHash.get(rules[i].directoryIn)) {
-                rulesHash.set(rules[i].directoryIn, [
-                    ...rulesHash.get(rules[i].directoryIn),
-                    rules[i],
-                ]);
-            } else {
-                rulesHash.set(rules[i].directoryIn, [rules[i]]);
-            }
-        }
-        return rulesHash;
+        return rules;
     }
 
+    /** Checks if Folder Organiser is running by checking if
+     * chokidar is watching any paths via the size of the
+     * directoryWatcher hash map
+     * @returns  boolean
+     */
     public isWatchingDirectories(): boolean {
         if (this.directoryWatcher.size > 0) {
             return true;
@@ -55,30 +51,30 @@ class FileManagement {
             return "No rules available!";
         }
         const readyPromises = [];
-        for (let [path, rules] of this.rules) {
-            readyPromises.push(this.watchDirectory(path, rules));
-        }
+        this.rules.forEach(rule => {
+            readyPromises.push(this.watchDirectory(rule.directoryIn, rule));
+        });
 
         await Promise.all(readyPromises);
         await this.pressEnterToContinue();
         await this.openMainMenu();
     }
 
-    private watchDirectory(directory: string, rules: IReadRule[]) {
+    private watchDirectory(directory: string, rule: IReadRule) {
         const watcherReady = new Promise<void>(resolve => {
             const watcher = chokidar.watch(directory, {
                 ignored: /(^|[\/\\])\../, // ignore dotfiles
                 persistent: true,
+                depth: rule.recursive ? undefined : 0,
+                usePolling: true,
+                interval: 10000, // scan directories every 10 seconds to reduce CPU usage.
             });
 
             watcher
-                .on("add", path => this.handleFileEvent("add", path, rules))
-                .on("change", path =>
-                    this.handleFileEvent("change", path, rules)
-                )
-                .on("unlink", path =>
-                    this.handleFileEvent("unlink", path, rules)
-                )
+                .on("add", path => this.processRule("add", path, rule))
+                .on("change", path => this.processRule("change", path, rule))
+                .on("moved", path => this.processRule("moved", path, rule))
+                .on("unlink", path => this.processRule("unlink", path, rule))
                 .on("error", error => Logger.error(`Watcher error: ${error}`))
                 .on("ready", () => {
                     Logger.info(
@@ -92,19 +88,7 @@ class FileManagement {
         return watcherReady;
     }
 
-    private async handleFileEvent(
-        eventType: EventType,
-        path: string,
-        rules: IReadRule[]
-    ) {
-        if (rules.length === 1) {
-            this.processRule(eventType, path, rules[0]);
-        } else {
-            rules.forEach(rule => this.processRule(eventType, path, rule));
-        }
-    }
-
-    public processRule(
+    public async processRule(
         eventType: EventType,
         filename: string,
         rule: IReadRule
@@ -112,31 +96,32 @@ class FileManagement {
         if (!rule.active) {
             return "Rule not active";
         }
-        if (eventType === "add") {
-            if (
-                this.checkFileExtension(filename, rule.includedFileExtension) ||
-                this.checkFileName(filename, rule.includedFileNames)
-            ) {
-                const oldPath = filename;
-                const newPath = path.join(
-                    rule.directoryOut,
-                    path.basename(filename)
-                );
-                try {
-                    if (!this.checkDirectoryExists(rule.directoryOut)) {
-                        Logger.info(
-                            `Directory does not exist, creating: ${rule.directoryOut}`
-                        );
-                        this.createDirectory(rule.directoryOut, true);
-                        this.moveFileToAlternativeDir(oldPath, newPath);
-                    } else if (this.checkDirectoryExists(rule.directoryOut)) {
-                        this.moveFileToAlternativeDir(oldPath, newPath);
-                    }
-
-                    Logger.info(`Successfully moved ${oldPath} to ${newPath}`);
-                } catch (error) {
-                    Logger.error(`Error during file processing: ${error}`);
+        if (
+            this.checkFileExtension(filename, rule.includedFileExtension) ||
+            this.checkFileName(filename, rule.includedFileNames)
+        ) {
+            const oldPath = filename;
+            const newPath = path.join(
+                rule.directoryOut,
+                path.basename(filename)
+            );
+            try {
+                if (!this.checkPathExists(oldPath)) {
+                    return "Path no longer exists";
                 }
+                if (!this.checkPathExists(rule.directoryOut)) {
+                    Logger.info(
+                        `Directory does not exist, creating: ${rule.directoryOut}`
+                    );
+                    this.createDirectory(rule.directoryOut, true);
+                    this.moveFileToAlternativeDir(oldPath, newPath);
+                } else if (this.checkPathExists(rule.directoryOut)) {
+                    this.moveFileToAlternativeDir(oldPath, newPath);
+                }
+
+                Logger.info(`Successfully moved ${oldPath} to ${newPath}`);
+            } catch (error) {
+                Logger.error(`Error during file processing: ${error}`);
             }
         }
     }
@@ -162,7 +147,7 @@ class FileManagement {
         return acceptedFileNames.split(" ").includes(basename);
     }
 
-    public checkDirectoryExists(path: string): boolean {
+    public checkPathExists(path: string): boolean {
         return fs.existsSync(path);
     }
 
@@ -176,17 +161,23 @@ class FileManagement {
 
     public moveFileToAlternativeDir(oldPath: string, newPath: string): void {
         try {
-            fs.renameSync(oldPath, newPath);
+            const checkedNewPath = this.renameFileIfExists(newPath);
+            fs.renameSync(oldPath, checkedNewPath);
         } catch (err) {
             throw new Error(`failed to move file with an error of:${err}`);
         }
     }
 
-    private stopWatching(path) {
-        const watcher = this.directoryWatcher.get(path);
-        if (watcher) {
-            watcher.close();
+    public renameFileIfExists(targetPath: string) {
+        const basename = path.basename(targetPath, path.extname(targetPath));
+        const extension = path.extname(targetPath);
+
+        if (!this.checkPathExists(targetPath)) {
+            return targetPath;
         }
+        return `${path.dirname(
+            targetPath
+        )}/${basename}-${new Date().getTime()}${extension}`;
     }
 
     public async stopAllDirectoryWatchers() {
@@ -202,6 +193,13 @@ class FileManagement {
         await this.pressEnterToContinue();
         await this.openMainMenu();
     }
+
+    private stopWatching(path) {
+        const watcher = this.directoryWatcher.get(path);
+        if (watcher) {
+            watcher.close();
+        }
+    }
 }
 
 export const fileManagement = new FileManagement(
@@ -210,4 +208,4 @@ export const fileManagement = new FileManagement(
     openMainMenu
 );
 
-export type EventType = "change" | "add" | "unlink";
+export type EventType = "change" | "add" | "unlink" | "moved";

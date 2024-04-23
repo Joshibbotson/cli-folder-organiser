@@ -50,19 +50,23 @@ export class Rules {
 
     public async printRuleFile() {
         const rules = this.readRuleFile();
-        const compactRules = rules.map(rule => {
-            return {
-                id: rule.id,
-                name: rule.rule,
-                fileNames: rule.includedFileNames,
-                fileExtensions: rule.includedFileExtension,
-                directoryIn: rule.directoryIn,
-                directoryOut: rule.directoryOut,
-                recursive: rule.recursive,
-                active: rule.active,
-            };
-        });
-        Logger.table(compactRules);
+        if (rules && rules.info) {
+            Logger.table(rules);
+        } else {
+            const compactRules = rules.map(rule => {
+                return {
+                    id: rule.id,
+                    name: rule.rule,
+                    fileNames: rule.includedFileNames,
+                    fileExtensions: rule.includedFileExtension,
+                    directoryIn: rule.directoryIn,
+                    directoryOut: rule.directoryOut,
+                    recursive: rule.recursive,
+                    active: rule.active,
+                };
+            });
+            Logger.table(compactRules);
+        }
         await this.pressEnterToContinue();
         await this.openMainMenu();
     }
