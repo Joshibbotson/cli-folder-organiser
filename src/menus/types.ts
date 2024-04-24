@@ -18,4 +18,7 @@ export interface IReadRule {
     recursive: boolean;
     active: boolean;
     creationDate: string;
+    filesMoved: number;
+    filesRenamed: number;
+    filesDeleted: number;
 }

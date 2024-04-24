@@ -7,9 +7,9 @@ import { pressEnterToContinue } from "../menus/continue-menu/pressEnterMenu.menu
 import { openMainMenu } from "../menus/main-menu/mainMenu.menu";
 import { Logger } from "./Logger";
 
-class FileManagement {
+export class FileManagement {
     private readonly rulesReader: Rules;
-    private readonly rules: IReadRule[] | null = null;
+    private rules: IReadRule[] | null = null;
 
     private directoryWatcher: Map<any, FSWatcher> = new Map();
     private readonly pressEnterToContinue: () => void;
@@ -47,6 +47,7 @@ class FileManagement {
     }
 
     public async startDirectoryWatchers() {
+        this.rules = this.getRules();
         if (!this.rules) {
             return "No rules available!";
         }
@@ -83,7 +84,7 @@ class FileManagement {
                         resolve();
                 });
 
-            this.directoryWatcher.set(path, watcher);
+            this.directoryWatcher.set(directory, watcher);
         });
         return watcherReady;
     }
@@ -115,8 +116,10 @@ class FileManagement {
                     );
                     this.createDirectory(rule.directoryOut, true);
                     this.moveFileToAlternativeDir(oldPath, newPath);
+                    this.rulesReader.incrementStat(rule.id, "moved");
                 } else if (this.checkPathExists(rule.directoryOut)) {
                     this.moveFileToAlternativeDir(oldPath, newPath);
+                    this.rulesReader.incrementStat(rule.id, "moved");
                 }
 
                 Logger.info(`Successfully moved ${oldPath} to ${newPath}`);
@@ -180,22 +183,24 @@ class FileManagement {
         )}/${basename}-${new Date().getTime()}${extension}`;
     }
 
+    /** Stops all chokidar watchers by looping through  */
     public async stopAllDirectoryWatchers() {
         if (!this.rules) {
             return "No rules available!";
         }
 
-        for (let path of this.rules) {
-            this.stopWatching(path);
-        }
+        this.rules.forEach(rule => this.stopWatching(rule.directoryIn));
+
         this.directoryWatcher.clear();
         Logger.info("stopped folder organiser");
         await this.pressEnterToContinue();
         await this.openMainMenu();
     }
 
-    private stopWatching(path) {
+    /** Stops chokidar watcher if directoryWatcher hash map includes that path. */
+    private stopWatching(path): void {
         const watcher = this.directoryWatcher.get(path);
+        console.log("true:", this.directoryWatcher);
         if (watcher) {
             watcher.close();
         }

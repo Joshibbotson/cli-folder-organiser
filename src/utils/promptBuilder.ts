@@ -4,14 +4,20 @@ export function promptBuilder(
     type: PromptType,
     name: string,
     message: string,
-    choices?: string[]
+    opts: IPromptBuilderOpts
 ): Prompt[] {
     return [
         {
             type: type,
             name: name,
             message: message,
-            choices: choices,
+            validate: opts.validate,
+            choices: opts.choices,
         },
     ];
+}
+
+interface IPromptBuilderOpts {
+    choices?: { name: string; value: string | number }[];
+    validate?: (value: string | number) => boolean | string;
 }

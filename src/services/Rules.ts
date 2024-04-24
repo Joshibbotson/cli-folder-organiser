@@ -71,6 +71,26 @@ export class Rules {
         await this.openMainMenu();
     }
 
+    public async printStats() {
+        const rules = this.readRuleFile();
+        if (rules && rules.info) {
+            Logger.table(rules);
+        } else {
+            const stats = rules.map(rule => {
+                return {
+                    id: rule.id,
+                    name: rule.rule,
+                    filesMoved: rule.filesMoved,
+                    filesRenamed: rule.filesRenamed,
+                    filesDeleted: rule.filesDeleted,
+                };
+            });
+            Logger.table(stats);
+        }
+        await this.pressEnterToContinue();
+        await this.openMainMenu();
+    }
+
     public addRule(ruleSpecification: ICreateRule) {
         let data = this.readRuleFile();
         const len = data.length;
@@ -85,6 +105,9 @@ export class Rules {
                 directoryOut: ruleSpecification.dirOut,
                 active: ruleSpecification.isActive,
                 creationDate: new Date().toISOString(),
+                filesMoved: 0,
+                filesRenamed: 0,
+                filesDeleted: 0,
             });
         } else if (data === undefined || Object.keys(data).length > 0) {
             data = [
@@ -98,10 +121,46 @@ export class Rules {
                     directoryOut: ruleSpecification.dirOut,
                     active: ruleSpecification.isActive,
                     creationDate: new Date().toISOString(),
+                    filesMoved: 0,
+                    filesRenamed: 0,
+                    filesDeleted: 0,
                 },
             ];
         }
         const stringifiedData = JSON.stringify(data, null, 2);
+        fs.writeFileSync("./config-files/rules.json", stringifiedData);
+    }
+
+    // public updateRule() {
+    //     let rules: IReadRule[] = this.readRuleFile();
+    //     rules = rules.filter(rule => {
+    //         return rule.id !== id;
+    //     });
+
+    //     const stringifiedData = JSON.stringify(rules, null, 2);
+    //     fs.writeFileSync("./config-files/rules.json", stringifiedData);
+    // }
+
+    public incrementStat(ruleId: number, type: IStatType) {
+        let rules: IReadRule[] = this.readRuleFile();
+        rules = rules.map(rule => {
+            if (rule.id === ruleId) {
+                switch (type) {
+                    case "moved":
+                        rule.filesMoved = Number(rule.filesMoved + 1);
+                        break;
+                    case "renamed":
+                        rule.filesRenamed = Number(rule.filesRenamed + 1);
+                        break;
+                    case "deleted":
+                        rule.filesDeleted = Number(rule.filesDeleted + 1);
+                        break;
+                }
+            }
+            return rule;
+        });
+
+        const stringifiedData = JSON.stringify(rules, null, 2);
         fs.writeFileSync("./config-files/rules.json", stringifiedData);
     }
 
@@ -117,3 +176,5 @@ export class Rules {
 }
 
 export const rules = new Rules(pressEnterToContinue, openMainMenu);
+
+export type IStatType = "moved" | "deleted" | "renamed";

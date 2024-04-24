@@ -22,5 +22,6 @@ export async function openResetRuleConfirm() {
 export const resetRuleYesOrNo = promptBuilder(
     "confirm",
     "answer",
-    "Are you sure you want to reset all folder organiser rules?"
+    "Are you sure you want to reset all folder organiser rules?",
+    {}
 );

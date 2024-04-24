@@ -4,11 +4,53 @@ import { rules } from "../../services/Rules";
 import { Logger } from "../../services/Logger";
 import { promptBuilder } from "../../utils/promptBuilder";
 
-export async function openDeleteRuleInput() {
+export async function deleteMenu() {
     try {
-        let answer = await inquirer.prompt(deleteRuleInput);
-        // Logger.info("answer: ", newRuleSpecification);
-        rules.deleteRule(Number(answer.id));
+        const rulesList = await rules.readRuleFile();
+        const formattedRuleList = [
+            ...rulesList.map(rule => {
+                return { name: rule.rule, value: rule.id };
+            }),
+            {
+                name: "Back to Main Menu...",
+                value: "Back to Main Menu...",
+            },
+        ];
+
+        const rulesToDeleteOptions = promptBuilder(
+            "list",
+            "answer",
+            "Please select a rule to delete to start: ",
+            {
+                choices: Array.isArray(rulesList)
+                    ? formattedRuleList
+                    : [
+                          {
+                              name: "No rules available",
+                              value: "No rules available",
+                          },
+                      ],
+            }
+        );
+
+        const { answer } = await inquirer.prompt(rulesToDeleteOptions);
+
+        if (answer === "Back to Main Menu...") {
+            return await openMainMenu();
+        }
+
+        const confirmQuestion = {
+            type: "confirm",
+            name: "confirm",
+            message: `Are you sure you want to delete this rule?`,
+        };
+
+        const { confirm } = await inquirer.prompt(confirmQuestion);
+
+        if (confirm) {
+            rules.deleteRule(Number(answer));
+            Logger.info("Rule deleted");
+        }
         await openMainMenu();
     } catch (error) {
         if (error.isTtyError) {
@@ -20,9 +62,3 @@ export async function openDeleteRuleInput() {
         }
     }
 }
-
-export const deleteRuleInput = promptBuilder(
-    "input",
-    "id",
-    "Delete rule by ID:"
-);

@@ -13,5 +13,6 @@ export type Prompt = {
     type: PromptType;
     name: string;
     message: string;
-    choices: string[];
+    validate?: (value: string | number) => boolean | string;
+    choices?: { name: string; value: string | number }[];
 };
