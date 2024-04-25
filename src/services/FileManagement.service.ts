@@ -132,6 +132,18 @@ export class FileManagement {
         }
     }
 
+    private extractQuotedStrings(inputString: string): string[] | [] {
+        const regex = /"([^"]*)"/g;
+        let matches = [];
+        let match;
+
+        while ((match = regex.exec(inputString))) {
+            matches.push(match[1]);
+        }
+
+        return matches;
+    }
+
     private checkFileExtension(
         filename: string,
         acceptedFileExts: string

@@ -33,7 +33,7 @@ export class NewRuleMenu {
             "fileName",
             'Enter target file strings, space-separated and enclosed in quotes (e.g., "example1" "example2"):',
             {
-                validate: fileName => this.noEmptyRule(fileName),
+                validate: fileName => this.fileNameValidation(fileName),
             }
         ),
         ...promptBuilder(
@@ -65,7 +65,7 @@ export class NewRuleMenu {
             "input",
             "ignoredSubDirectories",
             'Directories to ignore: space-separated and enclosed in quotes (e.g., "/targetDirectory/subDirectory1" "/targetDirectory/subDirectory2"):\n',
-            {}
+            { validate: value => this.noMisMatchedQuotationMarks(value) }
         ),
         ...promptBuilder(
             "confirm",
@@ -113,12 +113,63 @@ export class NewRuleMenu {
         return value.length > 0 ? true : "Cannot be empty";
     }
 
+    private fileNameValidation(value: string): boolean | string {
+        const emptyRuleCheck = this.noEmptyRule(value);
+        if (emptyRuleCheck !== true) {
+            return emptyRuleCheck;
+        }
+
+        const quotationMarkCheck = this.noMisMatchedQuotationMarks(value);
+        if (quotationMarkCheck !== true) {
+            return quotationMarkCheck;
+        }
+
+        return true;
+    }
+
     private noEmptyRule(value: string): boolean | string {
         if (this.fileExtensions.length > 0) {
             return true;
         } else if (!value) {
             return "Must have at least one rule option: target file extensions or file names";
         }
+        return true;
+    }
+
+    private noMisMatchedQuotationMarks(inputString: string): boolean | string {
+        let cleanedString = inputString.replace(/\\"/g, "");
+        const quotationCount = (cleanedString.match(/"/g) || []).length;
+
+        if (quotationCount % 2 !== 0) {
+            return 'Mismatched quotation marks: please ensure every opening " is paired with a closing "';
+        }
+
+        if (
+            (cleanedString.startsWith('"') && !cleanedString.endsWith('"')) ||
+            (!cleanedString.startsWith('"') && cleanedString.endsWith('"'))
+        ) {
+            return "Unmatched quotation mark at the start or end of the string.";
+        }
+
+        let segments = inputString.split('"');
+        let inQuotes = false;
+        for (let i = 0; i < segments.length; i++) {
+            if (i % 2 === 1) {
+                inQuotes = !inQuotes;
+            } else {
+                if (segments[i].trim().length > 0) {
+                    return (
+                        "All text must be enclosed in quotation marks. Issue found around: " +
+                        segments[i].trim()
+                    );
+                }
+            }
+        }
+
+        if (inQuotes) {
+            return "Unmatched quotation mark found.";
+        }
+
         return true;
     }
 }
