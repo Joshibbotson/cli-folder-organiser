@@ -1,7 +1,7 @@
 import fs from "fs";
 import { pressEnterToContinue } from "../menus/continue-menu/pressEnterMenu.menu";
 import { openMainMenu } from "../menus/main-menu/mainMenu.menu";
-import { RULES } from "../CONSTANTS";
+import { CONSTANTS } from "../CONSTANTS";
 import { ICreateRule, IReadRule } from "../menus/types";
 import { Logger } from "./Logger";
 
@@ -18,7 +18,7 @@ export class Rules {
     private checkIfRuleFileExists() {
         if (!fs.existsSync("./config-files/rules.json")) {
             const data = {
-                info: RULES.noRules,
+                info: CONSTANTS.noRules,
             };
             const stringifiedData = JSON.stringify(data, null, 2);
             fs.writeFileSync("./config-files/rules.json", stringifiedData);
@@ -33,7 +33,7 @@ export class Rules {
                 return rules;
             }
             return {
-                info: RULES.noRules,
+                info: CONSTANTS.noRules,
             };
         } catch (err) {
             Logger.error(`Failed to read file with an error of: ${err}`);

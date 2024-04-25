@@ -19,5 +19,5 @@ export function promptBuilder(
 
 interface IPromptBuilderOpts {
     choices?: { name: string; value: string | number }[];
-    validate?: (value: string | number) => boolean | string;
+    validate?: (value: string) => boolean | string;
 }

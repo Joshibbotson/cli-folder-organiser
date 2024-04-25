@@ -97,6 +97,9 @@ export class FileManagement {
         if (!rule.active) {
             return "Rule not active";
         }
+        if (path.dirname(filename) === rule.directoryOut) {
+            return "Directory same as Directory out";
+        }
         if (
             this.checkFileExtension(filename, rule.includedFileExtension) ||
             this.checkFileName(filename, rule.includedFileNames)
@@ -200,7 +203,6 @@ export class FileManagement {
     /** Stops chokidar watcher if directoryWatcher hash map includes that path. */
     private stopWatching(path): void {
         const watcher = this.directoryWatcher.get(path);
-        console.log("true:", this.directoryWatcher);
         if (watcher) {
             watcher.close();
         }

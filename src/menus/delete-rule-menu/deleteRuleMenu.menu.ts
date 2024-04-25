@@ -3,6 +3,7 @@ import { openMainMenu } from "../main-menu/mainMenu.menu";
 import { rules } from "../../services/Rules";
 import { Logger } from "../../services/Logger";
 import { promptBuilder } from "../../utils/promptBuilder";
+import { CONSTANTS } from "../../CONSTANTS";
 
 export async function deleteMenu() {
     try {
@@ -12,8 +13,8 @@ export async function deleteMenu() {
                 return { name: rule.rule, value: rule.id };
             }),
             {
-                name: "Back to Main Menu...",
-                value: "Back to Main Menu...",
+                name: CONSTANTS.backToMainMenu,
+                value: CONSTANTS.backToMainMenu,
             },
         ];
 
@@ -51,7 +52,7 @@ export async function deleteMenu() {
             rules.deleteRule(Number(answer));
             Logger.info("Rule deleted");
         }
-        await openMainMenu();
+        await deleteMenu();
     } catch (error) {
         if (error.isTtyError) {
             Logger.error(

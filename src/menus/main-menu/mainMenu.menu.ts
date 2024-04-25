@@ -1,6 +1,6 @@
 import { rules } from "../../services/Rules";
 import { endProgram } from "../../utils/endProgram";
-import { openNewRuleList } from "../new-rule-menu/newRuleMenu.menu";
+import { newRuleMenu } from "../new-rule-menu/newRuleMenu.menu";
 import inquirer from "inquirer";
 import { fileManagement } from "../../services/FileManagement.service";
 import { Logger } from "../../services/Logger";
@@ -65,7 +65,7 @@ export async function handleMainMenuSelection(answer: string) {
             await rules.printStats();
             break;
         case "Add new rule":
-            await openNewRuleList();
+            await newRuleMenu.openNewRuleList();
             break;
         case "Delete rule":
             await deleteMenu();
