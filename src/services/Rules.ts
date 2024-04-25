@@ -58,6 +58,8 @@ export class Rules {
                     id: rule.id,
                     name: rule.rule,
                     fileNames: rule.includedFileNames,
+                    fileNamesAllOrAny: rule.fileNameAllOrAny,
+                    fileNameAndOrfileExt: rule.ruleAndOrOptions,
                     fileExtensions: rule.includedFileExtension,
                     directoryIn: rule.directoryIn,
                     directoryOut: rule.directoryOut,
@@ -96,15 +98,18 @@ export class Rules {
         const len = data.length;
         if (data !== undefined && !data.info) {
             data.push({
+                creationDate: new Date().toISOString(),
                 id: data[len - 1].id + 1,
                 rule: ruleSpecification.ruleName,
                 directoryIn: ruleSpecification.dirIn,
                 includedFileExtension: ruleSpecification.fileExtensions,
                 includedFileNames: ruleSpecification.fileName,
+                fileNameAllOrAny: ruleSpecification.fileNameAllOrAny,
+                ruleAndOrOptions: ruleSpecification.ruleAndOrOptions,
                 recursive: ruleSpecification.recursive,
                 directoryOut: ruleSpecification.dirOut,
+                ignoredSubDirectories: ruleSpecification.ignoredSubDirectories,
                 active: ruleSpecification.isActive,
-                creationDate: new Date().toISOString(),
                 filesMoved: 0,
                 filesRenamed: 0,
                 filesDeleted: 0,
@@ -112,15 +117,19 @@ export class Rules {
         } else if (data === undefined || Object.keys(data).length > 0) {
             data = [
                 {
+                    creationDate: new Date().toISOString(),
                     id: 1,
                     rule: ruleSpecification.ruleName,
                     directoryIn: ruleSpecification.dirIn,
                     includedFileExtension: ruleSpecification.fileExtensions,
                     includedFileNames: ruleSpecification.fileName,
+                    fileNameAllOrAny: ruleSpecification.fileNameAllOrAny,
+                    ruleAndOrOptions: ruleSpecification.ruleAndOrOptions,
                     recursive: ruleSpecification.recursive,
                     directoryOut: ruleSpecification.dirOut,
+                    ignoredSubDirectories:
+                        ruleSpecification.ignoredSubDirectories,
                     active: ruleSpecification.isActive,
-                    creationDate: new Date().toISOString(),
                     filesMoved: 0,
                     filesRenamed: 0,
                     filesDeleted: 0,

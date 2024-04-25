@@ -25,20 +25,48 @@ export class NewRuleMenu {
         ...promptBuilder(
             "input",
             "fileExtensions",
-            "Target File extension:",
+            "Enter target file extensions, separated by spaces (e.g., .txt .jpeg .mpeg):",
             {}
         ),
         ...promptBuilder(
             "input",
             "fileName",
-            "Target File includes characters:",
+            'Enter target file strings, space-separated and enclosed in quotes (e.g., "example1" "example2"):',
             {
                 validate: fileName => this.noEmptyRule(fileName),
+            }
+        ),
+        ...promptBuilder(
+            "list",
+            "fileNameAllOrAny",
+            "Select matching criteria for file strings: match ALL specified strings, or ANY of the strings:",
+            {
+                choices: [
+                    { name: "All Strings (ALL)", value: "ALL" },
+                    { name: "Any String (ANY)", value: "ANY" },
+                ],
+            }
+        ),
+        ...promptBuilder(
+            "list",
+            "ruleAndOrOptions",
+            "Specify how to match: by BOTH File Extensions AND File Names, OR by EITHER:",
+            {
+                choices: [
+                    { name: "Both (AND)", value: "AND" },
+                    { name: "Either (OR)", value: "OR" },
+                ],
             }
         ),
         ...promptBuilder("input", "dirOut", "Directory to move to:", {
             validate: dirOutPath => this.directoryOutValidation(dirOutPath),
         }),
+        ...promptBuilder(
+            "input",
+            "ignoredSubDirectories",
+            'Directories to ignore: space-separated and enclosed in quotes (e.g., "/targetDirectory/subDirectory1" "/targetDirectory/subDirectory2"):\n',
+            {}
+        ),
         ...promptBuilder(
             "confirm",
             "recursive",
