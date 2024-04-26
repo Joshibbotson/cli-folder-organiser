@@ -68,7 +68,7 @@ export class FileManagement {
                 persistent: true,
                 depth: rule.recursive ? undefined : 0,
                 usePolling: true,
-                interval: 10000, // scan directories every 10 seconds to reduce CPU usage.
+                interval: 10000,
             });
 
             watcher
@@ -100,73 +100,168 @@ export class FileManagement {
         if (path.dirname(filename) === rule.directoryOut) {
             return "Directory same as Directory out";
         }
-        if (
-            this.checkFileExtension(filename, rule.includedFileExtension) ||
-            this.checkFileName(filename, rule.includedFileNames)
-        ) {
-            const oldPath = filename;
-            const newPath = path.join(
-                rule.directoryOut,
-                path.basename(filename)
-            );
-            try {
-                if (!this.checkPathExists(oldPath)) {
-                    return "Path no longer exists";
-                }
-                if (!this.checkPathExists(rule.directoryOut)) {
-                    Logger.info(
-                        `Directory does not exist, creating: ${rule.directoryOut}`
-                    );
-                    this.createDirectory(rule.directoryOut, true);
-                    this.moveFileToAlternativeDir(oldPath, newPath);
-                    this.rulesReader.incrementStat(rule.id, "moved");
-                } else if (this.checkPathExists(rule.directoryOut)) {
-                    this.moveFileToAlternativeDir(oldPath, newPath);
-                    this.rulesReader.incrementStat(rule.id, "moved");
-                }
+        switch (rule.ruleAndOrOptions) {
+            case "AND":
+                await this.handleFileAndExtRule(filename, rule);
+                break;
+            case "OR":
+                await this.handleFileOrExtRule(filename, rule);
+                break;
+        }
+    }
 
-                Logger.info(`Successfully moved ${oldPath} to ${newPath}`);
-            } catch (error) {
-                Logger.error(`Error during file processing: ${error}`);
+    private async handleFileAndExtRule(filename: string, rule: IReadRule) {
+        let validFileName: boolean;
+        switch (rule.fileNameAllOrAny) {
+            case "ALL":
+                validFileName = this.fileNameIncludesAllStrings(
+                    filename,
+                    this.extractQuotedStrings(rule.includedFileNames)
+                );
+                break;
+            case "ANY":
+                validFileName = this.fileNameIncludesAnyString(
+                    filename,
+                    this.extractQuotedStrings(rule.includedFileNames)
+                );
+        }
+        const validExtension: boolean = this.fileNameIncludesExtension(
+            filename,
+            this.extractQuotedStrings(rule.includedFileExtension)
+        );
+        const ignoredDirectory = this.ignoredDirectory(filename, rule);
+
+        if (validFileName && validExtension && !ignoredDirectory) {
+            await this.executeSuccessfulRule(filename, rule);
+        }
+    }
+
+    private async handleFileOrExtRule(filename: string, rule: IReadRule) {
+        let validFileName: boolean;
+        switch (rule.fileNameAllOrAny) {
+            case "ALL":
+                validFileName = this.fileNameIncludesAllStrings(
+                    filename,
+                    this.extractQuotedStrings(rule.includedFileNames)
+                );
+                break;
+            case "ANY":
+                validFileName = this.fileNameIncludesAnyString(
+                    filename,
+                    this.extractQuotedStrings(rule.includedFileNames)
+                );
+        }
+        const validExtension: boolean = this.fileNameIncludesExtension(
+            filename,
+            this.extractQuotedStrings(rule.includedFileExtension)
+        );
+        const ignoredDirectory = this.ignoredDirectory(filename, rule);
+
+        if ((validFileName || validExtension) && !ignoredDirectory) {
+            await this.executeSuccessfulRule(filename, rule);
+        }
+    }
+
+    private fileNameIncludesExtension(
+        filename: string,
+        fileExtensions: string[]
+    ): boolean {
+        return fileExtensions.includes(path.extname(filename));
+    }
+
+    private fileNameIncludesAnyString(
+        filename: string,
+        includedFileNames: string[]
+    ): boolean {
+        let valid = false;
+        for (const name of includedFileNames) {
+            if (filename.includes(name)) {
+                valid = true;
+                break;
             }
         }
+        return valid;
     }
 
-    private extractQuotedStrings(inputString: string): string[] | [] {
-        const regex = /"([^"]*)"/g;
-        let matches = [];
-        let match;
+    private async executeSuccessfulRule(filename: string, rule: IReadRule) {
+        const oldPath = filename;
+        const newPath = path.join(rule.directoryOut, path.basename(filename));
+        try {
+            if (!this.checkPathExists(oldPath)) {
+                return "Path no longer exists";
+            }
+            if (!this.checkPathExists(rule.directoryOut)) {
+                Logger.info(
+                    `Directory does not exist, creating: ${rule.directoryOut}`
+                );
+                this.createDirectory(rule.directoryOut, true);
+                this.moveFileToAlternativeDir(oldPath, newPath);
+                this.rulesReader.incrementStat(rule.id, "moved");
+            } else if (this.checkPathExists(rule.directoryOut)) {
+                this.moveFileToAlternativeDir(oldPath, newPath);
+                this.rulesReader.incrementStat(rule.id, "moved");
+            }
 
-        while ((match = regex.exec(inputString))) {
-            matches.push(match[1]);
+            Logger.info(`Successfully moved ${oldPath} to ${newPath}`);
+        } catch (error) {
+            Logger.error(`Error during file processing: ${error}`);
         }
-
-        return matches;
     }
 
-    private checkFileExtension(
+    private fileNameIncludesAllStrings(
         filename: string,
-        acceptedFileExts: string
+        includedFileNames: string[]
     ): boolean {
-        const extension = path.extname(filename);
-        return acceptedFileExts.split(" ").includes(extension);
+        let valid = true;
+        for (const name of includedFileNames) {
+            if (!filename.includes(name)) {
+                valid = false;
+                break;
+            }
+        }
+        return valid;
     }
 
-    /** Consider the following in the future:
-     * - case sensitivity
-     * - regex checks
-     * Currently checks space deliminted strings.
-     */
-    private checkFileName(
-        filename: string,
-        acceptedFileNames: string
-    ): boolean {
-        const basename = path.basename(filename);
-        return acceptedFileNames.split(" ").includes(basename);
+    private ignoredDirectory(filename: string, rule: IReadRule): boolean {
+        return this.extractQuotedStrings(rule.ignoredSubDirectories).includes(
+            path.dirname(filename)
+        );
+    }
+
+    private extractQuotedStrings(inputString: string): string[] {
+        let tmp: string[] = [];
+        let strings: string[] = [];
+        let push = true;
+        for (let i = 0; i < inputString.length; i++) {
+            if (inputString[i] === "|") {
+                push = false;
+                if (tmp.length > 0) {
+                    strings.push(tmp.join("").trim());
+                }
+                tmp = [];
+            }
+            if (inputString[i] !== "|") {
+                push = true;
+            }
+            if (push) {
+                tmp.push(inputString[i]);
+            }
+        }
+        if (tmp.length > 0) {
+            strings.push(tmp.join("").trim());
+        }
+        return strings;
     }
 
     public checkPathExists(path: string): boolean {
         return fs.existsSync(path);
+    }
+
+    public checkPathIsSubDirectory(
+        parentPath: string,
+        subPath: string
+    ): boolean {
+        return subPath.includes(parentPath);
     }
 
     public createDirectory(path: string, recursive: boolean): void {

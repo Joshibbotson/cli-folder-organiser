@@ -26,14 +26,19 @@ export class NewRuleMenu {
             "input",
             "fileExtensions",
             "Enter target file extensions, separated by spaces (e.g., .txt .jpeg .mpeg):",
-            {}
+            {
+                validate: value => {
+                    this.fileExtensions = value;
+                    return true;
+                },
+            }
         ),
         ...promptBuilder(
             "input",
             "fileName",
-            'Enter target file strings, space-separated and enclosed in quotes (e.g., "example1" "example2"):',
+            "Enter target file strings, space-separated and enclosed in quotes (e.g., example1 | example2):",
             {
-                validate: fileName => this.fileNameValidation(fileName),
+                validate: fileName => this.noEmptyRule(fileName),
             }
         ),
         ...promptBuilder(
@@ -64,8 +69,11 @@ export class NewRuleMenu {
         ...promptBuilder(
             "input",
             "ignoredSubDirectories",
-            'Directories to ignore: space-separated and enclosed in quotes (e.g., "/targetDirectory/subDirectory1" "/targetDirectory/subDirectory2"):\n',
-            { validate: value => this.noMisMatchedQuotationMarks(value) }
+            "Directories to ignore: space-separated and enclosed in quotes (e.g., /targetDirectory/subDirectory1 | /targetDirectory/subDirectory2):\n",
+            {
+                validate: childPaths =>
+                    this.directoriesToIgnoreValidation(childPaths),
+            }
         ),
         ...promptBuilder(
             "confirm",
@@ -99,6 +107,59 @@ export class NewRuleMenu {
         return pathExists ? true : "Path does not exist";
     }
 
+    private directoriesToIgnoreValidation(
+        childPaths: string
+    ): boolean | string {
+        const childPathsArr = this.extractQuotedStrings(childPaths);
+        let badPath;
+        let valid = true;
+        if (childPaths.length > 0) {
+            childPathsArr.forEach(childPath => {
+                if (childPath === this.dirInValue) {
+                    valid = false;
+                    badPath = childPath;
+                }
+                if (
+                    !fileManagement.checkPathIsSubDirectory(
+                        this.dirInValue,
+                        childPath
+                    )
+                ) {
+                    valid = false;
+                    badPath = childPath;
+                }
+            });
+        }
+        return valid
+            ? valid
+            : `${badPath} is not a sub directory of ${this.dirInValue}`;
+    }
+
+    private extractQuotedStrings(inputString: string): string[] | [] {
+        let tmp: string[] = [];
+        let strings: string[] = [];
+        let push = true;
+        for (let i = 0; i < inputString.length; i++) {
+            if (inputString[i] === "|") {
+                push = false;
+                if (tmp.length > 0) {
+                    strings.push(tmp.join("").trim());
+                }
+                tmp = [];
+            }
+            if (inputString[i] !== "|") {
+                push = true;
+            }
+            if (push) {
+                tmp.push(inputString[i]);
+            }
+        }
+        if (tmp.length > 0) {
+            strings.push(tmp.join("").trim());
+        }
+        return strings;
+    }
+
     private directoryOutValidation(dirOutValue: string): boolean | string {
         if (typeof this.notNull(dirOutValue) === "string") {
             return "Output directory cannot be empty";
@@ -113,63 +174,12 @@ export class NewRuleMenu {
         return value.length > 0 ? true : "Cannot be empty";
     }
 
-    private fileNameValidation(value: string): boolean | string {
-        const emptyRuleCheck = this.noEmptyRule(value);
-        if (emptyRuleCheck !== true) {
-            return emptyRuleCheck;
-        }
-
-        const quotationMarkCheck = this.noMisMatchedQuotationMarks(value);
-        if (quotationMarkCheck !== true) {
-            return quotationMarkCheck;
-        }
-
-        return true;
-    }
-
     private noEmptyRule(value: string): boolean | string {
         if (this.fileExtensions.length > 0) {
             return true;
         } else if (!value) {
             return "Must have at least one rule option: target file extensions or file names";
         }
-        return true;
-    }
-
-    private noMisMatchedQuotationMarks(inputString: string): boolean | string {
-        let cleanedString = inputString.replace(/\\"/g, "");
-        const quotationCount = (cleanedString.match(/"/g) || []).length;
-
-        if (quotationCount % 2 !== 0) {
-            return 'Mismatched quotation marks: please ensure every opening " is paired with a closing "';
-        }
-
-        if (
-            (cleanedString.startsWith('"') && !cleanedString.endsWith('"')) ||
-            (!cleanedString.startsWith('"') && cleanedString.endsWith('"'))
-        ) {
-            return "Unmatched quotation mark at the start or end of the string.";
-        }
-
-        let segments = inputString.split('"');
-        let inQuotes = false;
-        for (let i = 0; i < segments.length; i++) {
-            if (i % 2 === 1) {
-                inQuotes = !inQuotes;
-            } else {
-                if (segments[i].trim().length > 0) {
-                    return (
-                        "All text must be enclosed in quotation marks. Issue found around: " +
-                        segments[i].trim()
-                    );
-                }
-            }
-        }
-
-        if (inQuotes) {
-            return "Unmatched quotation mark found.";
-        }
-
         return true;
     }
 }
