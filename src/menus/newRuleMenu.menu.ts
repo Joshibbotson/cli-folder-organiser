@@ -1,10 +1,9 @@
 import inquirer from "inquirer";
-import { openMainMenu } from "../main-menu/mainMenu.menu";
-import { rules } from "../../services/Rules";
-import { ICreateRule } from "../types";
-import { Logger } from "../../services/Logger";
-import { promptBuilder } from "../../utils/promptBuilder";
-import { fileManagement } from "../../services/FileManagement.service";
+import { services } from "../services/index";
+import { ICreateRule } from "./types";
+import { Logger } from "../services/Logger.service";
+import { promptBuilder } from "../utils/promptBuilder";
+import { menus } from ".";
 
 export class NewRuleMenu {
     private dirInValue = "";
@@ -89,8 +88,8 @@ export class NewRuleMenu {
             let newRuleSpecification: ICreateRule = await inquirer.prompt(
                 this.newRuleQuestions
             );
-            rules.addRule(newRuleSpecification);
-            await openMainMenu();
+            services.rules.addRule(newRuleSpecification);
+            await menus.mainMenu.openMainMenu();
         } catch (error) {
             if (error.isTtyError) {
                 Logger.error(
@@ -103,7 +102,7 @@ export class NewRuleMenu {
     }
 
     private directoryValidation(path: string): boolean | string {
-        const pathExists = fileManagement.checkPathExists(path);
+        const pathExists = services.fileManagement.checkPathExists(path);
         return pathExists ? true : "Path does not exist";
     }
 
@@ -120,7 +119,7 @@ export class NewRuleMenu {
                     badPath = childPath;
                 }
                 if (
-                    !fileManagement.checkPathIsSubDirectory(
+                    !services.fileManagement.checkPathIsSubDirectory(
                         this.dirInValue,
                         childPath
                     )
@@ -183,5 +182,3 @@ export class NewRuleMenu {
         return true;
     }
 }
-
-export const newRuleMenu = new NewRuleMenu();

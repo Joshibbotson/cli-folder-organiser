@@ -1,258 +1,8 @@
-import { Rules, rules } from "./Rules";
-import { IReadRule } from "../menus/types";
-import chokidar, { FSWatcher } from "chokidar";
 import path from "path";
 import fs from "fs";
-import { pressEnterToContinue } from "../menus/continue-menu/pressEnterMenu.menu";
-import { openMainMenu } from "../menus/main-menu/mainMenu.menu";
-import { Logger } from "./Logger";
 
+/** utility class with methods for handling files and directories */
 export class FileManagement {
-    private readonly rulesReader: Rules;
-    private rules: IReadRule[] | null = null;
-
-    private directoryWatcher: Map<any, FSWatcher> = new Map();
-    private readonly pressEnterToContinue: () => void;
-    private readonly openMainMenu: () => void;
-
-    constructor(rulesReader, pressEnterToContinue, openMainMenu) {
-        this.rulesReader = rulesReader;
-        this.rules = this.getRules();
-        this.pressEnterToContinue = pressEnterToContinue;
-        this.openMainMenu = openMainMenu;
-    }
-
-    /** Reads the rules.json file. If rules.json is empty will return null
-     *
-     * @returns IReadRule[] | null
-     */
-    public getRules(): IReadRule[] | null {
-        const rules = this.rulesReader.readRuleFile();
-        if (rules && rules.info) {
-            return null;
-        }
-        return rules;
-    }
-
-    /** Checks if Folder Organiser is running by checking if
-     * chokidar is watching any paths via the size of the
-     * directoryWatcher hash map
-     * @returns  boolean
-     */
-    public isWatchingDirectories(): boolean {
-        if (this.directoryWatcher.size > 0) {
-            return true;
-        }
-        return false;
-    }
-
-    public async startDirectoryWatchers() {
-        this.rules = this.getRules();
-        if (!this.rules) {
-            return "No rules available!";
-        }
-        const readyPromises = [];
-        this.rules.forEach(rule => {
-            readyPromises.push(this.watchDirectory(rule.directoryIn, rule));
-        });
-
-        await Promise.all(readyPromises);
-        await this.pressEnterToContinue();
-        await this.openMainMenu();
-    }
-
-    private watchDirectory(directory: string, rule: IReadRule) {
-        const watcherReady = new Promise<void>(resolve => {
-            const watcher = chokidar.watch(directory, {
-                ignored: /(^|[\/\\])\../, // ignore dotfiles
-                persistent: true,
-                depth: rule.recursive ? undefined : 0,
-                usePolling: true,
-                interval: 10000,
-            });
-
-            watcher
-                .on("add", path => this.processRule("add", path, rule))
-                .on("change", path => this.processRule("change", path, rule))
-                .on("moved", path => this.processRule("moved", path, rule))
-                .on("unlink", path => this.processRule("unlink", path, rule))
-                .on("error", error => Logger.error(`Watcher error: ${error}`))
-                .on("ready", () => {
-                    Logger.info(
-                        `Initial scan complete. Watching for changes in ${directory}`
-                    ),
-                        resolve();
-                });
-
-            this.directoryWatcher.set(directory, watcher);
-        });
-        return watcherReady;
-    }
-
-    public async processRule(
-        eventType: EventType,
-        filename: string,
-        rule: IReadRule
-    ) {
-        if (!rule.active) {
-            return "Rule not active";
-        }
-        if (path.dirname(filename) === rule.directoryOut) {
-            return "Directory same as Directory out";
-        }
-        switch (rule.ruleAndOrOptions) {
-            case "AND":
-                await this.handleFileAndExtRule(filename, rule);
-                break;
-            case "OR":
-                await this.handleFileOrExtRule(filename, rule);
-                break;
-        }
-    }
-
-    private async handleFileAndExtRule(filename: string, rule: IReadRule) {
-        let validFileName: boolean;
-        switch (rule.fileNameAllOrAny) {
-            case "ALL":
-                validFileName = this.fileNameIncludesAllStrings(
-                    filename,
-                    this.extractQuotedStrings(rule.includedFileNames)
-                );
-                break;
-            case "ANY":
-                validFileName = this.fileNameIncludesAnyString(
-                    filename,
-                    this.extractQuotedStrings(rule.includedFileNames)
-                );
-        }
-        const validExtension: boolean = this.fileNameIncludesExtension(
-            filename,
-            this.extractQuotedStrings(rule.includedFileExtension)
-        );
-        const ignoredDirectory = this.ignoredDirectory(filename, rule);
-
-        if (validFileName && validExtension && !ignoredDirectory) {
-            await this.executeSuccessfulRule(filename, rule);
-        }
-    }
-
-    private async handleFileOrExtRule(filename: string, rule: IReadRule) {
-        let validFileName: boolean;
-        switch (rule.fileNameAllOrAny) {
-            case "ALL":
-                validFileName = this.fileNameIncludesAllStrings(
-                    filename,
-                    this.extractQuotedStrings(rule.includedFileNames)
-                );
-                break;
-            case "ANY":
-                validFileName = this.fileNameIncludesAnyString(
-                    filename,
-                    this.extractQuotedStrings(rule.includedFileNames)
-                );
-        }
-        const validExtension: boolean = this.fileNameIncludesExtension(
-            filename,
-            this.extractQuotedStrings(rule.includedFileExtension)
-        );
-        const ignoredDirectory = this.ignoredDirectory(filename, rule);
-
-        if ((validFileName || validExtension) && !ignoredDirectory) {
-            await this.executeSuccessfulRule(filename, rule);
-        }
-    }
-
-    private fileNameIncludesExtension(
-        filename: string,
-        fileExtensions: string[]
-    ): boolean {
-        return fileExtensions.includes(path.extname(filename));
-    }
-
-    private fileNameIncludesAnyString(
-        filename: string,
-        includedFileNames: string[]
-    ): boolean {
-        let valid = false;
-        for (const name of includedFileNames) {
-            if (filename.includes(name)) {
-                valid = true;
-                break;
-            }
-        }
-        return valid;
-    }
-
-    private async executeSuccessfulRule(filename: string, rule: IReadRule) {
-        const oldPath = filename;
-        const newPath = path.join(rule.directoryOut, path.basename(filename));
-        try {
-            if (!this.checkPathExists(oldPath)) {
-                return "Path no longer exists";
-            }
-            if (!this.checkPathExists(rule.directoryOut)) {
-                Logger.info(
-                    `Directory does not exist, creating: ${rule.directoryOut}`
-                );
-                this.createDirectory(rule.directoryOut, true);
-                this.moveFileToAlternativeDir(oldPath, newPath);
-                this.rulesReader.incrementStat(rule.id, "moved");
-            } else if (this.checkPathExists(rule.directoryOut)) {
-                this.moveFileToAlternativeDir(oldPath, newPath);
-                this.rulesReader.incrementStat(rule.id, "moved");
-            }
-
-            Logger.info(`Successfully moved ${oldPath} to ${newPath}`);
-        } catch (error) {
-            Logger.error(`Error during file processing: ${error}`);
-        }
-    }
-
-    private fileNameIncludesAllStrings(
-        filename: string,
-        includedFileNames: string[]
-    ): boolean {
-        let valid = true;
-        for (const name of includedFileNames) {
-            if (!filename.includes(name)) {
-                valid = false;
-                break;
-            }
-        }
-        return valid;
-    }
-
-    private ignoredDirectory(filename: string, rule: IReadRule): boolean {
-        return this.extractQuotedStrings(rule.ignoredSubDirectories).includes(
-            path.dirname(filename)
-        );
-    }
-
-    private extractQuotedStrings(inputString: string): string[] {
-        let tmp: string[] = [];
-        let strings: string[] = [];
-        let push = true;
-        for (let i = 0; i < inputString.length; i++) {
-            if (inputString[i] === "|") {
-                push = false;
-                if (tmp.length > 0) {
-                    strings.push(tmp.join("").trim());
-                }
-                tmp = [];
-            }
-            if (inputString[i] !== "|") {
-                push = true;
-            }
-            if (push) {
-                tmp.push(inputString[i]);
-            }
-        }
-        if (tmp.length > 0) {
-            strings.push(tmp.join("").trim());
-        }
-        return strings;
-    }
-
     public checkPathExists(path: string): boolean {
         return fs.existsSync(path);
     }
@@ -272,54 +22,55 @@ export class FileManagement {
         }
     }
 
-    public moveFileToAlternativeDir(oldPath: string, newPath: string): void {
+    public writeFile(path: string, data: string) {
         try {
-            const checkedNewPath = this.renameFileIfExists(newPath);
+            fs.writeFileSync(path, data);
+        } catch (err) {
+            throw `Failed to write to file with an error of: ${err}`;
+        }
+    }
+
+    public readFile(path: string, encoding: BufferEncoding) {
+        try {
+            return fs.readFileSync(path, encoding);
+        } catch (err) {
+            throw `Failed to read file with an error of: ${err}`;
+        }
+    }
+
+    /** moves file to alternative path, handles already existing paths by renaming
+     * the filename of the file to be moved. */
+    public moveFileToAlternativeDir(
+        oldPath: string,
+        newPath: string
+    ): { success: boolean; renamed: boolean } {
+        try {
+            const { isRenamed, path } = this.renameFileIfExists(newPath);
+            const checkedNewPath = path;
             fs.renameSync(oldPath, checkedNewPath);
+            return { success: true, renamed: isRenamed };
         } catch (err) {
             throw new Error(`failed to move file with an error of:${err}`);
         }
     }
 
+    /** Renames basefile if target path alreadt exists by adding a current timestring to the end
+     *
+     * e.g. targetPath: /example/foo would become /example/foo-1714211513449
+     * @returns string
+     */
     public renameFileIfExists(targetPath: string) {
         const basename = path.basename(targetPath, path.extname(targetPath));
         const extension = path.extname(targetPath);
 
         if (!this.checkPathExists(targetPath)) {
-            return targetPath;
+            return { isRenamed: false, path: targetPath };
         }
-        return `${path.dirname(
-            targetPath
-        )}/${basename}-${new Date().getTime()}${extension}`;
-    }
-
-    /** Stops all chokidar watchers by looping through  */
-    public async stopAllDirectoryWatchers() {
-        if (!this.rules) {
-            return "No rules available!";
-        }
-
-        this.rules.forEach(rule => this.stopWatching(rule.directoryIn));
-
-        this.directoryWatcher.clear();
-        Logger.info("stopped folder organiser");
-        await this.pressEnterToContinue();
-        await this.openMainMenu();
-    }
-
-    /** Stops chokidar watcher if directoryWatcher hash map includes that path. */
-    private stopWatching(path): void {
-        const watcher = this.directoryWatcher.get(path);
-        if (watcher) {
-            watcher.close();
-        }
+        return {
+            isRenamed: true,
+            path: `${path.dirname(
+                targetPath
+            )}/${basename}-${new Date().getTime()}${extension}`,
+        };
     }
 }
-
-export const fileManagement = new FileManagement(
-    rules,
-    pressEnterToContinue,
-    openMainMenu
-);
-
-export type EventType = "change" | "add" | "unlink" | "moved";

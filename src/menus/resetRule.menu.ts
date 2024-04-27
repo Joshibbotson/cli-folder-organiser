@@ -1,13 +1,15 @@
 import inquirer from "inquirer";
-import { rules } from "../../services/Rules";
-import { Logger } from "../../services/Logger";
-import { openMainMenu } from "../main-menu/mainMenu.menu";
-import { promptBuilder } from "../../utils/promptBuilder";
+import { services } from "../services/index";
+import { Logger } from "../services/Logger.service";
+import { promptBuilder } from "../utils/promptBuilder";
+import { menus } from ".";
 
 export async function openResetRuleConfirm() {
     try {
         let resetAllRules = await inquirer.prompt(resetRuleYesOrNo);
-        resetAllRules.answer ? rules.resetRuleFile() : await openMainMenu();
+        resetAllRules.answer
+            ? services.rules.resetRuleFile()
+            : await menus.mainMenu.openMainMenu();
     } catch (error) {
         if (error.isTtyError) {
             Logger.error(

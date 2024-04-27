@@ -1,20 +1,20 @@
 import inquirer from "inquirer";
-import { openMainMenu } from "../main-menu/mainMenu.menu";
-import { rules } from "../../services/Rules";
-import { Logger } from "../../services/Logger";
-import { promptBuilder } from "../../utils/promptBuilder";
-import { CONSTANTS } from "../../CONSTANTS";
+import { services } from "../services/index";
+import { Logger } from "../services/Logger.service";
+import { promptBuilder } from "../utils/promptBuilder";
+import { CONSTANTS } from "../CONSTANTS";
+import { menus } from ".";
 
 export async function deleteMenu() {
     try {
-        const rulesList = await rules.readRuleFile();
+        const rulesList = await services.rules.readRuleFile();
         const formattedRuleList = [
             ...rulesList.map(rule => {
                 return { name: rule.rule, value: rule.id };
             }),
             {
-                name: CONSTANTS.backToMainMenu,
-                value: CONSTANTS.backToMainMenu,
+                name: CONSTANTS.BACK_TO_MAIN_MENU,
+                value: CONSTANTS.BACK_TO_MAIN_MENU,
             },
         ];
 
@@ -37,7 +37,7 @@ export async function deleteMenu() {
         const { answer } = await inquirer.prompt(rulesToDeleteOptions);
 
         if (answer === "Back to Main Menu...") {
-            return await openMainMenu();
+            await menus.mainMenu.openMainMenu();
         }
 
         const confirmQuestion = {
@@ -49,7 +49,7 @@ export async function deleteMenu() {
         const { confirm } = await inquirer.prompt(confirmQuestion);
 
         if (confirm) {
-            rules.deleteRule(Number(answer));
+            services.rules.deleteRule(Number(answer));
             Logger.info("Rule deleted");
         }
         await deleteMenu();
