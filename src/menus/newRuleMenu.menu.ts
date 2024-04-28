@@ -13,7 +13,9 @@ export class NewRuleMenu {
             validate: value => this.notNull(value),
         }),
         ...promptBuilder("input", "dirIn", "Enter the directory path:", {
-            validate: dir => this.directoryValidation(dir),
+            validate: dir => {
+                return this.directoryValidation(dir);
+            },
         }),
         ...promptBuilder(
             "input",
@@ -96,6 +98,7 @@ export class NewRuleMenu {
     }
 
     private directoryValidation(path: string): boolean | string {
+        this.dirInValue = path;
         const pathExists = services.fileManagement.checkPathExists(path);
         return pathExists ? true : "Path does not exist";
     }
@@ -157,7 +160,7 @@ export class NewRuleMenu {
         if (typeof this.notNull(dirOutValue) === "string") {
             return "Output directory cannot be empty";
         }
-        if (dirOutValue === this.dirInValue) {
+        if (dirOutValue.trim() === this.dirInValue) {
             return "Output directory must be different from input directory";
         }
         return true;

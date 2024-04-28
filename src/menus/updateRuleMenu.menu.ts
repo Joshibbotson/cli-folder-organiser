@@ -246,7 +246,7 @@ export class UpdateMenu {
     }
 
     private noEmptyRule(value: string): boolean | string {
-        if (this.selectedRule.fileExtensions.length > 0) {
+        if (this.selectedRule.includedFileExtension.length > 0) {
             return true;
         } else if (!value) {
             return "Must have at least one rule option: target file extensions or file names";
