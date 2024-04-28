@@ -1,7 +1,7 @@
 import inquirer from "inquirer";
 import { services } from "../services/index";
 import { Logger } from "../services/Logger.service";
-import { promptBuilder } from "../utils/promptBuilder";
+import { promptBuilder } from "../utils/promptBuilder.utils";
 import { CONSTANTS } from "../CONSTANTS";
 import { menus } from ".";
 
@@ -31,6 +31,7 @@ export async function deleteMenu() {
                               value: "No rules available",
                           },
                       ],
+                pageSize: 10,
             }
         );
 

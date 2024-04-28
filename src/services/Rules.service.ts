@@ -57,6 +57,14 @@ export class Rules {
         }
     }
 
+    public readRuleById(id: string) {
+        const rules = this.readRuleFile();
+        if (rules && rules.info) {
+            return new Error("Can't ready by Id as no rules exist.");
+        }
+        return rules.filter(rule => rule.id === id)[0];
+    }
+
     /** Reads the rules.json file. If rules.json is empty will return null
      *
      * @returns IReadRule[] | null
@@ -163,15 +171,20 @@ export class Rules {
         );
     }
 
-    // public updateRule() {
-    //     let rules: IReadRule[] = this.readRuleFile();
-    //     rules = rules.filter(rule => {
-    //         return rule.id !== id;
-    //     });
-
-    //     const stringifiedData = JSON.stringify(rules, null, 2);
-    //     fs.writeFileSync("./config-files/rules.json", stringifiedData);
-    // }
+    public updateRule(updatedRule) {
+        const rules = this.readRuleFile();
+        const updatedRules = rules.map(rule => {
+            if (rule.id === updatedRule.id) {
+                rule = updatedRule;
+            }
+            return rule;
+        });
+        const stringifiedData = JSON.stringify(updatedRules, null, 2);
+        this.fileManager.writeFile(
+            CONSTANTS.RULES_CONFIG_PATH,
+            stringifiedData
+        );
+    }
 
     public incrementStat(ruleId: number, type: IStatType) {
         let rules: IReadRule[] = this.readRuleFile();

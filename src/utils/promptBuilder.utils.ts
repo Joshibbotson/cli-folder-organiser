@@ -13,6 +13,8 @@ export function promptBuilder(
             message: message,
             validate: opts.validate,
             choices: opts.choices,
+            pageSize: opts.pageSize,
+            default: opts.default,
         },
     ];
 }
@@ -20,4 +22,6 @@ export function promptBuilder(
 interface IPromptBuilderOpts {
     choices?: { name: string; value: string | number }[];
     validate?: (value: string) => boolean | string;
+    pageSize?: number;
+    default?: string | boolean;
 }

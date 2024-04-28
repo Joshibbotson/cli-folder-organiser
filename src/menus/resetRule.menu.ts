@@ -1,7 +1,7 @@
 import inquirer from "inquirer";
 import { services } from "../services/index";
 import { Logger } from "../services/Logger.service";
-import { promptBuilder } from "../utils/promptBuilder";
+import { promptBuilder } from "../utils/promptBuilder.utils";
 import { menus } from ".";
 
 export async function openResetRuleConfirm() {

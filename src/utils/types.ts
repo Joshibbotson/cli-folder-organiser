@@ -15,4 +15,6 @@ export type Prompt = {
     message: string;
     validate?: (value: string | number) => boolean | string;
     choices?: { name: string; value: string | number }[];
+    pageSize: number;
+    default: string | boolean;
 };

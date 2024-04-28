@@ -2,7 +2,7 @@ import inquirer from "inquirer";
 import { services } from "../services/index";
 import { ICreateRule } from "./types";
 import { Logger } from "../services/Logger.service";
-import { promptBuilder } from "../utils/promptBuilder";
+import { promptBuilder } from "../utils/promptBuilder.utils";
 import { menus } from ".";
 
 export class NewRuleMenu {
@@ -12,15 +12,7 @@ export class NewRuleMenu {
         ...promptBuilder("input", "ruleName", "Enter the rule name:", {
             validate: value => this.notNull(value),
         }),
-        ...promptBuilder("input", "dirIn", "Enter the directory path:", {
-            validate: path => {
-                const validation = this.directoryValidation(path);
-                if (validation === true) {
-                    this.dirInValue = path;
-                }
-                return validation;
-            },
-        }),
+        ...promptBuilder("input", "dirIn", "Enter the directory path:", {}),
         ...promptBuilder(
             "input",
             "fileExtensions",

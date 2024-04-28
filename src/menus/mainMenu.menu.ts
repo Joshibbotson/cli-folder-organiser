@@ -1,17 +1,20 @@
 import { services } from "../services/index";
-import { endProgram } from "../utils/endProgram";
+import { endProgram } from "../utils/endProgram.utils";
 import inquirer from "inquirer";
 import { Logger } from "../services/Logger.service";
 import { openResetRuleConfirm } from "./resetRule.menu";
-import { promptBuilder } from "../utils/promptBuilder";
+import { promptBuilder } from "../utils/promptBuilder.utils";
 import { deleteMenu } from "./deleteRuleMenu.menu";
 import { NewRuleMenu } from "./newRuleMenu.menu";
+import { UpdateMenu } from "./updateRuleMenu.menu";
 
 export class MainMenu {
     private readonly newRuleMenuReader: NewRuleMenu;
+    private readonly updateMenuReader: UpdateMenu;
 
-    constructor(newRuleMenuReader: NewRuleMenu) {
+    constructor(newRuleMenuReader: NewRuleMenu, updateMenuReader: UpdateMenu) {
         this.newRuleMenuReader = newRuleMenuReader;
+        this.updateMenuReader = updateMenuReader;
     }
 
     private async handleMainMenuSelection(answer: string) {
@@ -24,6 +27,9 @@ export class MainMenu {
                 break;
             case "Add new rule":
                 await this.newRuleMenuReader.openNewRuleList();
+                break;
+            case "Update rule":
+                await this.updateMenuReader.updateMenu();
                 break;
             case "Delete rule":
                 await deleteMenu();
@@ -77,6 +83,7 @@ export class MainMenu {
                     { name: "See existing rules", value: "See existing rules" },
                     { name: "Stats for nerds", value: "Stats for nerds" },
                     { name: "Add new rule", value: "Add new rule" },
+                    { name: "Update rule", value: "Update rule" },
                     { name: "Delete rule", value: "Delete rule" },
                     { name: "Reset all rules", value: "Reset all rules" },
                     services.fileWatcher.isWatchingDirectories()
@@ -90,6 +97,7 @@ export class MainMenu {
                           },
                     { name: "Exit", value: "Exit" },
                 ],
+                pageSize: 10,
             }
         );
     }
