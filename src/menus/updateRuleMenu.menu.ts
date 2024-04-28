@@ -10,6 +10,9 @@ export class UpdateMenu {
     async updateMenu() {
         try {
             const rulesList = await services.rules.readRuleFile();
+            if (rulesList && rulesList.info) {
+                return Logger.table(rulesList);
+            }
             const formattedRuleList = [
                 ...rulesList.map(rule => {
                     return { name: rule.rule, value: rule.id };
@@ -79,6 +82,10 @@ export class UpdateMenu {
             const { chosenField } = await inquirer.prompt(
                 selectedRuleToUpdateOptions
             );
+
+            if (chosenField === "Back to Main Menu...") {
+                await menus.mainMenu.openMainMenu();
+            }
 
             const promptMapper = {
                 rule: promptBuilder("input", "newValue", chosenField, {

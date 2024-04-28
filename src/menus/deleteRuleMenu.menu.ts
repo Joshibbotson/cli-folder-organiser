@@ -8,6 +8,9 @@ import { menus } from ".";
 export async function deleteMenu() {
     try {
         const rulesList = await services.rules.readRuleFile();
+        if (rulesList && rulesList.info) {
+            return Logger.table(rulesList);
+        }
         const formattedRuleList = [
             ...rulesList.map(rule => {
                 return { name: rule.rule, value: rule.id };
