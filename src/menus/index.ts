@@ -1,6 +1,6 @@
-import { MainMenu } from "./mainMenu.menu";
+import { MainMenu } from "./MainMenu.menu";
 import { NewRuleMenu } from "./newRuleMenu.menu";
-import { UpdateMenu } from "./updateRuleMenu.menu";
+import { UpdateMenu } from "./UpdateRuleMenu.menu";
 
 const newRuleMenu = new NewRuleMenu();
 const updateMenu = new UpdateMenu();

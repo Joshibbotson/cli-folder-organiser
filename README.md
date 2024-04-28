@@ -32,6 +32,14 @@ cd into repository:
 cd cli-folder-organiser
 ```
 
+### Optional: Docker compose up to test cli-folder-organiser out in a contained environment
+
+```bash
+docker-compose run --rm cli-folder-organiser
+```
+
+### To use cli-folder-organiser on your local system:
+
 Install dependencies:
 
 ```bash

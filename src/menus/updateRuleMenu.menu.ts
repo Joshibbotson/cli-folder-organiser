@@ -87,6 +87,7 @@ export class UpdateMenu {
                 }),
                 directoryIn: promptBuilder("input", "newValue", chosenField, {
                     default: cleanedRule[chosenField],
+                    validate: dir => this.directoryValidation(dir),
                 }),
                 includedFileExtension: promptBuilder(
                     "input",

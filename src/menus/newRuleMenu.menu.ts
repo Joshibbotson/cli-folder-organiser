@@ -12,7 +12,9 @@ export class NewRuleMenu {
         ...promptBuilder("input", "ruleName", "Enter the rule name:", {
             validate: value => this.notNull(value),
         }),
-        ...promptBuilder("input", "dirIn", "Enter the directory path:", {}),
+        ...promptBuilder("input", "dirIn", "Enter the directory path:", {
+            validate: dir => this.directoryValidation(dir),
+        }),
         ...promptBuilder(
             "input",
             "fileExtensions",

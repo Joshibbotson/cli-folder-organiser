@@ -6,7 +6,7 @@ import { openResetRuleConfirm } from "./resetRule.menu";
 import { promptBuilder } from "../utils/promptBuilder.utils";
 import { deleteMenu } from "./deleteRuleMenu.menu";
 import { NewRuleMenu } from "./newRuleMenu.menu";
-import { UpdateMenu } from "./updateRuleMenu.menu";
+import { UpdateMenu } from "./UpdateRuleMenu.menu";
 
 export class MainMenu {
     private readonly newRuleMenuReader: NewRuleMenu;
