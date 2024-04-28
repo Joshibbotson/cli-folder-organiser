@@ -1,8 +1,0 @@
-{
-    "watch": ["src", "package.json"],
-    "ext": "ts,json",
-    "ignore": ["src/**/*.spec.ts", "node_modules"],
-    "exec": "npm run build && node ./dist/index.js",
-    "stdin": true,
-    "delay": 1000
-}
