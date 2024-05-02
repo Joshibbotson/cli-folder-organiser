@@ -54,7 +54,7 @@ npm run start
 
 You're all set! Everything else is self explantory, however, see below for a step by step guide on how add rules and what each menu option does.
 
-The main menu:
+The main menu:\
 ![Screenshot 2024-04-28 at 16 09 53](https://github.com/Joshibbotson/cli-folder-organiser/assets/95958816/c86192e0-9fd2-44f6-909a-bcf54f1d96a0)
 
 Existing Rules, heres one I made earlier, we'll be adding an extra one:
