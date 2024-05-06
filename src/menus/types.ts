@@ -3,7 +3,7 @@ export interface ICreateRule {
     dirIn: string;
     fileExtensions: string;
     fileName: string;
-    fileNameAllOrAny: FileNameAllOrAny;
+    fileNameMatchCriteria: FileNameMatchCriteria;
     ruleAndOrOptions: RuleAndOrOptions;
     dirOut: string;
     ignoredSubDirectories: string;
@@ -11,9 +11,9 @@ export interface ICreateRule {
     isActive: boolean;
 }
 
-type FileNameAllOrAny = "ALL" | "ANY";
+type FileNameMatchCriteria = "ALL" | "ANY" | "N/A";
 
-type RuleAndOrOptions = "AND" | "OR";
+type RuleAndOrOptions = "AND" | "OR" | "N/A";
 
 export interface IReadRule {
     id: number;
@@ -22,7 +22,7 @@ export interface IReadRule {
     directoryIn: string;
     includedFileExtension: string;
     includedFileNames: string;
-    fileNameAllOrAny: FileNameAllOrAny;
+    fileNameMatchCriteria: FileNameMatchCriteria;
     ruleAndOrOptions: RuleAndOrOptions;
     directoryOut: string;
     ignoredSubDirectories: string;

@@ -117,7 +117,7 @@ export class UpdateMenu {
                         validate: fileName => this.noEmptyRule(fileName),
                     }
                 ),
-                fileNameAllOrAny: promptBuilder(
+                fileNameMatchCriteria: promptBuilder(
                     "list",
                     "newValue",
                     `${chosenField}: ${cleanedRule[chosenField]}`,
@@ -169,6 +169,8 @@ export class UpdateMenu {
             this.selectedRule[chosenField] = newValue;
 
             services.rules.updateRule(this.selectedRule);
+            Logger.info("Successfully updated rule");
+            await this.updateMenu();
         } catch (err) {
             if (err.isTtyError) {
                 Logger.error(

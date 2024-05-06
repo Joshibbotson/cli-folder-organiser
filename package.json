@@ -1,6 +1,7 @@
 {
     "name": "cli-folder-organiser",
     "version": "1.0.0",
+    "author": "Josh Ibbotson",
     "description": "",
     "main": "index.js",
     "scripts": {
@@ -12,7 +13,6 @@
         "url": "git+https://github.com/Joshibbotson/cli-folder-organiser.git"
     },
     "keywords": [],
-    "author": "",
     "license": "ISC",
     "bugs": {
         "url": "https://github.com/Joshibbotson/cli-folder-organiser/issues"
