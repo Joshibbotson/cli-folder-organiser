@@ -227,24 +227,24 @@ export class Rules {
 
     public async processRule(
         eventType: EventType,
-        filename: string,
+        pathName: string,
         rule: IReadRule
     ) {
         if (!rule.active) {
             return "Rule not active";
         }
-        if (path.dirname(filename) === rule.directoryOut) {
+        if (path.dirname(pathName) === rule.directoryOut) {
             return "Directory same as Directory out";
         }
         switch (rule.ruleAndOrOptions) {
             case "AND":
-                await this.handleFileAndExtRule(filename, rule);
+                await this.handleFileAndExtRule(pathName, rule);
                 break;
             case "OR":
-                await this.handleFileOrExtRule(filename, rule);
+                await this.handleFileOrExtRule(pathName, rule);
                 break;
             case "N/A":
-                await this.handleExtensionRule(filename, rule);
+                await this.handleExtensionRule(pathName, rule);
                 break;
         }
     }
@@ -271,22 +271,22 @@ export class Rules {
         return validFileName;
     }
 
-    private async handleExtensionRule(filename: string, rule: IReadRule) {
-        const validExtension: boolean = this.fileNameIncludesExtension(
-            filename,
+    private async handleExtensionRule(pathname: string, rule: IReadRule) {
+        const validExtension: boolean = this.filePathIncludesExtension(
+            pathname,
             rule.includedFileExtension
         );
 
-        const ignoredDirectory = this.ignoredDirectory(filename, rule);
+        const ignoredDirectory = this.ignoredDirectory(pathname, rule);
 
         if (validExtension && !ignoredDirectory) {
-            await this.executeSuccessfulRule(filename, rule);
+            await this.executeSuccessfulRule(pathname, rule);
         }
     }
 
     private async handleFileAndExtRule(filename: string, rule: IReadRule) {
         const validFileName = this.handleFileNameMatchCriteria(filename, rule);
-        const validExtension: boolean = this.fileNameIncludesExtension(
+        const validExtension: boolean = this.filePathIncludesExtension(
             filename,
             rule.includedFileExtension
         );
@@ -298,7 +298,7 @@ export class Rules {
 
     private async handleFileOrExtRule(filename: string, rule: IReadRule) {
         const validFileName = this.handleFileNameMatchCriteria(filename, rule);
-        const validExtension: boolean = this.fileNameIncludesExtension(
+        const validExtension: boolean = this.filePathIncludesExtension(
             filename,
             rule.includedFileExtension
         );
@@ -309,11 +309,12 @@ export class Rules {
         }
     }
 
-    private fileNameIncludesExtension(
+    private filePathIncludesExtension(
         filename: string,
         fileExtensions: string
     ): boolean {
-        return fileExtensions.includes(path.extname(filename));
+    
+        return fileExtensions.split(' ').includes(path.extname(filename));
     }
 
     private fileNameIncludesAnyString(
@@ -322,7 +323,7 @@ export class Rules {
     ): boolean {
         let valid = false;
         for (const name of includedFileNames) {
-            if (filename.includes(name)) {
+            if (path.basename(filename).includes(name)) {
                 valid = true;
                 break;
             }
@@ -373,7 +374,7 @@ export class Rules {
     ): boolean {
         let valid = true;
         for (const name of includedFileNames) {
-            if (!filename.includes(name)) {
+            if (!path.basename(filename).includes(name)) {
                 valid = false;
                 break;
             }
